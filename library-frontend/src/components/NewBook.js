@@ -11,7 +11,18 @@ const NewBook = (props) => {
   const [genres, setGenres] = useState([]);
 
   const [addNewBook] = useMutation(ADD_NEW_BOOK, {
-    refetchQueries: [{ query: ALL_BOOKS }],
+    update: (store, response) => {
+      const booksInStore = store.readQuery({ query: ALL_BOOKS });
+      console.log(response.data.addBook);
+      store.writeQuery({
+        query: ALL_BOOKS,
+
+        data: {
+          ...booksInStore,
+          allBooks: [...booksInStore, response.data.addBook],
+        },
+      });
+    },
   });
   const result = useQuery(ALL_BOOKS, {
     pollInterval: 2000,
@@ -24,7 +35,6 @@ const NewBook = (props) => {
     addNewBook({
       variables: { title, published: Number(published), author, genres },
     });
-    console.log('add book...');
 
     setTitle('');
     setPublished('');

@@ -1,11 +1,16 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useQuery, useMutation } from '@apollo/client';
 
 import { ALL_AUTHORS, EDIT_AUTHOR } from '../queries';
 import EditAuthor from './EditAuthor';
 
 const Authors = (props) => {
-  const result = useQuery(ALL_AUTHORS);
+  const [error, setError] = useState('');
+  const result = useQuery(ALL_AUTHORS, {
+    onError: (error) => {
+      setError(error.graphQLErrors[0].message);
+    },
+  });
   const [updateAuthor] = useMutation(EDIT_AUTHOR, {
     refetchQueries: [{ query: ALL_AUTHORS }],
   });
@@ -18,12 +23,12 @@ const Authors = (props) => {
   }
 
   const editAuthor = (name, born) => {
-    console.log({ variables: { name, born } });
     updateAuthor({ variables: { name, born } });
   };
   return (
     <div>
       <h2>authors</h2>
+      <p>{error}</p>
       <table>
         <tbody>
           <tr>
@@ -41,7 +46,9 @@ const Authors = (props) => {
         </tbody>
       </table>
 
-      <EditAuthor editAuthor={editAuthor} authors={result.data.allAuthors} />
+      {props.token ? (
+        <EditAuthor editAuthor={editAuthor} authors={result.data.allAuthors} />
+      ) : null}
     </div>
   );
 };
