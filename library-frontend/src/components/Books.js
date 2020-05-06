@@ -7,6 +7,12 @@ const Books = (props) => {
   const [genres, setGenres] = useState([]);
   const [filter, setFilter] = useState('all');
   const result = useQuery(ALL_BOOKS, {
+    onError: (error) => {
+      props.setMessage({
+        message: error.graphQLErrors[0].message,
+        type: 'error',
+      });
+    },
     pollInterval: 2000,
   });
 

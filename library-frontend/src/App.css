@@ -1,0 +1,15 @@
+.success {
+  width: 80%;
+  margin: auto;
+  color: green;
+  border: green 1px solid;
+  font-weight: 500;
+}
+
+.error {
+  width: 80%;
+  margin: auto;
+  color: red;
+  border: red 1px solid;
+  font-weight: 500;
+}

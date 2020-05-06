@@ -1,13 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect } from 'react';
 import { useMutation } from '@apollo/client';
 
 import { LOGIN } from '../queries';
-const Login = ({ show, setToken, setPage }) => {
-  const [error, setError] = useState('');
-
+const Login = ({ show, setToken, setPage, setMessage }) => {
   const [loginUser, result] = useMutation(LOGIN, {
     onError: (error) => {
-      setError(error.graphQLErrors[0].message);
+      setMessage({ message: error.graphQLErrors[0].message, type: 'error' });
     },
   });
 
@@ -38,7 +36,6 @@ const Login = ({ show, setToken, setPage }) => {
   return (
     <div>
       <h2>Login to Library</h2>
-      <p>{error}</p>
       <form onSubmit={(event) => handleSubmit(event)}>
         <div>
           <label htmlFor="username" name="username">
