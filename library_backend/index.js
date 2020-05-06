@@ -8,11 +8,14 @@ const {
   gql,
   UserInputError,
   AuthenticationError,
+  PubSub,
 } = require('apollo-server');
 
 const Author = require('./models/Author');
 const Book = require('./models/Book');
 const User = require('./models/User');
+
+const pubsub = new PubSub();
 
 mongoose.set('useFindAndModify', false);
 
@@ -86,6 +89,10 @@ const typeDefs = gql`
 
     login(username: String!, password: String!): Token
   }
+
+  type Subscription {
+    bookAdded: Book!
+  }
 `;
 
 const resolvers = {
@@ -140,6 +147,7 @@ const resolvers = {
   },
   Mutation: {
     addBook: async (root, args, { currentUser }) => {
+      console.log(args);
       if (!currentUser) {
         throw new AuthenticationError('You have to be logged in to add a book');
       }
@@ -148,18 +156,20 @@ const resolvers = {
         const newAuthor = new Author({ name: args.author });
         author = await newAuthor.save();
       }
-
+      const book = new Book({
+        title: args.title,
+        published: args.published,
+        author: author._id,
+        genres: args.genres,
+      });
       try {
-        const book = new Book({
-          title: args.title,
-          published: args.published,
-          author: author._id,
-          genres: args.genres,
-        });
-
         const newBook = await book.save();
+        author.bookCount++;
+        await author.save();
+
         const bookAuthor = await Author.findById({ _id: newBook.author });
         newBook.author = bookAuthor;
+        pubsub.publish('BOOK_ADDED', { bookAdded: newBook });
         return newBook;
       } catch (e) {
         throw new UserInputError('title should not be less than 2 characters', {
@@ -222,18 +232,9 @@ const resolvers = {
       return { value: jwt.sign(userDetails, process.env.SECRET) };
     },
   },
-  Author: {
-    bookCount: async (root) => {
-      const books = await Book.find({}).populate('author');
-
-      let count = 0;
-      for (let i in books) {
-        if (books[1].author.name === root.name) {
-          count++;
-        }
-      }
-
-      return count;
+  Subscription: {
+    bookAdded: {
+      subscribe: () => pubsub.asyncIterator(['BOOK_ADDED']),
     },
   },
 };
@@ -254,6 +255,7 @@ const server = new ApolloServer({
   },
 });
 
-server.listen().then(({ url }) => {
+server.listen().then(({ url, subscriptionsUrl }) => {
   console.log(`Server ready at ${url}`);
+  console.log(`Subscription ready at ${subscriptionsUrl}`);
 });
